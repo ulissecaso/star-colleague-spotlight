@@ -9,38 +9,98 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VotaRouteImport } from './routes/vota'
+import { Route as ClassificheRouteImport } from './routes/classifiche'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as VotaIdRouteImport } from './routes/vota.$id'
 
+const VotaRoute = VotaRouteImport.update({
+  id: '/vota',
+  path: '/vota',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClassificheRoute = ClassificheRouteImport.update({
+  id: '/classifiche',
+  path: '/classifiche',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VotaIdRoute = VotaIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => VotaRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/classifiche': typeof ClassificheRoute
+  '/vota': typeof VotaRouteWithChildren
+  '/vota/$id': typeof VotaIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/classifiche': typeof ClassificheRoute
+  '/vota': typeof VotaRouteWithChildren
+  '/vota/$id': typeof VotaIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/classifiche': typeof ClassificheRoute
+  '/vota': typeof VotaRouteWithChildren
+  '/vota/$id': typeof VotaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/admin' | '/classifiche' | '/vota' | '/vota/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/admin' | '/classifiche' | '/vota' | '/vota/$id'
+  id: '__root__' | '/' | '/admin' | '/classifiche' | '/vota' | '/vota/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  ClassificheRoute: typeof ClassificheRoute
+  VotaRoute: typeof VotaRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/vota': {
+      id: '/vota'
+      path: '/vota'
+      fullPath: '/vota'
+      preLoaderRoute: typeof VotaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/classifiche': {
+      id: '/classifiche'
+      path: '/classifiche'
+      fullPath: '/classifiche'
+      preLoaderRoute: typeof ClassificheRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +108,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vota/$id': {
+      id: '/vota/$id'
+      path: '/$id'
+      fullPath: '/vota/$id'
+      preLoaderRoute: typeof VotaIdRouteImport
+      parentRoute: typeof VotaRoute
+    }
   }
 }
 
+interface VotaRouteChildren {
+  VotaIdRoute: typeof VotaIdRoute
+}
+
+const VotaRouteChildren: VotaRouteChildren = {
+  VotaIdRoute: VotaIdRoute,
+}
+
+const VotaRouteWithChildren = VotaRoute._addFileChildren(VotaRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  ClassificheRoute: ClassificheRoute,
+  VotaRoute: VotaRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
