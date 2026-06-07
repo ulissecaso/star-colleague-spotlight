@@ -32,7 +32,11 @@ export const employeeLogin = createServerFn({ method: "POST" })
     if (!emp.attivo) throw new Error("Account non attivo. Contatta l'amministratore.");
 
     const token = crypto.randomUUID() + "-" + crypto.randomUUID();
-    const update: Record<string, unknown> = {
+    const update: {
+      session_token: string;
+      device_id: string;
+      primo_accesso_at?: string;
+    } = {
       session_token: token,
       device_id: emp.device_id ?? data.deviceId,
     };
