@@ -78,14 +78,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Top Team Cinquegrana Group" },
+      { name: "description", content: "App per la votazione dei dipendenti" },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Top Team Cinquegrana Group" },
+      { property: "og:description", content: "App per la votazione dei dipendenti" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Top Team Cinquegrana Group" },
+      { name: "twitter:description", content: "App per la votazione dei dipendenti" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4eb761c8-eb2a-45f5-8b3e-0d18dfbe5c75/id-preview-e8ce12dc--6e5e5123-e216-4617-8494-7d6510bc71e7.lovable.app-1780860525881.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4eb761c8-eb2a-45f5-8b3e-0d18dfbe5c75/id-preview-e8ce12dc--6e5e5123-e216-4617-8494-7d6510bc71e7.lovable.app-1780860525881.png" },
     ],
     links: [
       {
