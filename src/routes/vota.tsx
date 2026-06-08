@@ -43,7 +43,10 @@ function VotaPage() {
 
   const completed = data?.colleagues.filter((c) => c.voted).length ?? 0;
   const total = data?.colleagues.length ?? 0;
+  const minRequired = Math.ceil(total / 2);
   const pct = total > 0 ? (completed / total) * 100 : 0;
+  const minPct = total > 0 ? (minRequired / total) * 100 : 0;
+  const reachedMin = completed >= minRequired;
 
   return (
     <main className="min-h-dvh bg-background pb-24">
@@ -52,13 +55,29 @@ function VotaPage() {
           {session?.nome} • {data?.period && `${MESI[data.period.mese - 1]} ${data.period.anno}`}
         </p>
         <h1 className="text-3xl font-bold mt-2">Vota i colleghi</h1>
-        <p className="text-sm text-primary-foreground/80 mt-1">Tocca un nome per assegnare i voti.</p>
+        <p className="text-sm text-primary-foreground/80 mt-1">
+          Vota solo i colleghi che conosci bene. Minimo richiesto: <strong>{minRequired}</strong> su {total} (50%).
+        </p>
         <div className="mt-6 bg-primary-foreground/15 rounded-2xl p-4 backdrop-blur-sm">
           <div className="flex justify-between text-sm mb-2">
-            <span>Avanzamento</span>
+            <span>{reachedMin ? "Soglia minima raggiunta ✓" : "Avanzamento"}</span>
             <span className="font-semibold">{completed}/{total}</span>
           </div>
-          <Progress value={pct} className="h-2 bg-primary-foreground/20" />
+          <div className="relative">
+            <Progress value={pct} className="h-2 bg-primary-foreground/20" />
+            {total > 0 && !reachedMin && (
+              <div
+                className="absolute top-0 h-2 w-0.5 bg-gold"
+                style={{ left: `${minPct}%` }}
+                title="Soglia 50%"
+              />
+            )}
+          </div>
+          <p className="text-xs text-primary-foreground/70 mt-2">
+            {reachedMin
+              ? "Puoi continuare a votare altri colleghi o terminare qui."
+              : `Mancano ${minRequired - completed} voti per raggiungere il minimo.`}
+          </p>
         </div>
       </header>
 
