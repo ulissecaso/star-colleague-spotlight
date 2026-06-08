@@ -300,7 +300,9 @@ export const getDashboard = createServerFn({ method: "POST" }).handler(async () 
     .eq("attivo", true);
 
   const total = employees?.length ?? 0;
-  const expectedVotesPerVoter = Math.max(0, total - 1);
+  // Soglia minima: ogni votante deve valutare almeno il 50% dei colleghi (arrotondato per eccesso)
+  const totalColleagues = Math.max(0, total - 1);
+  const minRequiredPerVoter = Math.ceil(totalColleagues / 2);
 
   const { data: voters } = await supabaseAdmin
     .from("votes")
@@ -317,7 +319,7 @@ export const getDashboard = createServerFn({ method: "POST" }).handler(async () 
 
   let fullyDone = 0;
   for (const v of completionByVoter.values()) {
-    if (v >= expectedVotesPerVoter) fullyDone++;
+    if (v >= minRequiredPerVoter) fullyDone++;
   }
 
   const completion = total > 0 ? Math.round((fullyDone / total) * 100) : 0;
