@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/vota/$id")({
+export const Route = createFileRoute("/vota_/$id")({
   head: () => ({ meta: [{ title: "Valuta collega" }] }),
   component: VotaForm,
 });

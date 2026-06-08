@@ -13,7 +13,7 @@ import { Route as VotaRouteImport } from './routes/vota'
 import { Route as ClassificheRouteImport } from './routes/classifiche'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as VotaIdRouteImport } from './routes/vota.$id'
+import { Route as VotaIdRouteImport } from './routes/vota_.$id'
 
 const VotaRoute = VotaRouteImport.update({
   id: '/vota',
@@ -36,23 +36,23 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const VotaIdRoute = VotaIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => VotaRoute,
+  id: '/vota_/$id',
+  path: '/vota/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/classifiche': typeof ClassificheRoute
-  '/vota': typeof VotaRouteWithChildren
+  '/vota': typeof VotaRoute
   '/vota/$id': typeof VotaIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/classifiche': typeof ClassificheRoute
-  '/vota': typeof VotaRouteWithChildren
+  '/vota': typeof VotaRoute
   '/vota/$id': typeof VotaIdRoute
 }
 export interface FileRoutesById {
@@ -60,22 +60,23 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/classifiche': typeof ClassificheRoute
-  '/vota': typeof VotaRouteWithChildren
-  '/vota/$id': typeof VotaIdRoute
+  '/vota': typeof VotaRoute
+  '/vota_/$id': typeof VotaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths: '/' | '/admin' | '/classifiche' | '/vota' | '/vota/$id'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/admin' | '/classifiche' | '/vota' | '/vota/$id'
-  id: '__root__' | '/' | '/admin' | '/classifiche' | '/vota' | '/vota/$id'
+  id: '__root__' | '/' | '/admin' | '/classifiche' | '/vota' | '/vota_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   ClassificheRoute: typeof ClassificheRoute
-  VotaRoute: typeof VotaRouteWithChildren
+  VotaRoute: typeof VotaRoute
+  VotaIdRoute: typeof VotaIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -108,32 +109,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/vota/$id': {
-      id: '/vota/$id'
-      path: '/$id'
+    '/vota_/$id': {
+      id: '/vota_/$id'
+      path: '/vota/$id'
       fullPath: '/vota/$id'
       preLoaderRoute: typeof VotaIdRouteImport
-      parentRoute: typeof VotaRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
-
-interface VotaRouteChildren {
-  VotaIdRoute: typeof VotaIdRoute
-}
-
-const VotaRouteChildren: VotaRouteChildren = {
-  VotaIdRoute: VotaIdRoute,
-}
-
-const VotaRouteWithChildren = VotaRoute._addFileChildren(VotaRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   ClassificheRoute: ClassificheRoute,
-  VotaRoute: VotaRouteWithChildren,
+  VotaRoute: VotaRoute,
+  VotaIdRoute: VotaIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
