@@ -1,13 +1,14 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
-import { Check, ChevronRight } from "lucide-react";
-import { getColleagues } from "@/lib/voting.functions";
+import { Check, ChevronRight, X, Star } from "lucide-react";
+import { getColleagues, toggleSkip } from "@/lib/voting.functions";
 import { getSession } from "@/lib/employee-session";
 import { EmployeeAvatar } from "@/components/EmployeeAvatar";
 import { BottomNav } from "@/components/BottomNav";
 import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/vota")({
   head: () => ({ meta: [{ title: "Vota i tuoi colleghi" }] }),
@@ -19,6 +20,8 @@ const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","
 function VotaPage() {
   const navigate = useNavigate();
   const fetchColleagues = useServerFn(getColleagues);
+  const skipFn = useServerFn(toggleSkip);
+  const qc = useQueryClient();
   const session = typeof window !== "undefined" ? getSession() : null;
 
   useEffect(() => {
@@ -41,12 +44,21 @@ function VotaPage() {
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [data]);
 
-  const completed = data?.colleagues.filter((c) => c.voted).length ?? 0;
+  const voted = data?.colleagues.filter((c) => c.voted).length ?? 0;
   const total = data?.colleagues.length ?? 0;
   const minRequired = Math.ceil(total / 2);
-  const pct = total > 0 ? (completed / total) * 100 : 0;
-  const minPct = total > 0 ? (minRequired / total) * 100 : 0;
-  const reachedMin = completed >= minRequired;
+  const mancanti = Math.max(0, minRequired - voted);
+  const pct = total > 0 ? (voted / total) * 100 : 0;
+  const reachedMin = voted >= minRequired;
+
+  async function onToggleSkip(id: string, skip: boolean) {
+    try {
+      await skipFn({ data: { token: session!.session_token, votedId: id, skip } });
+      qc.invalidateQueries({ queryKey: ["colleagues", session?.id] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
 
   return (
     <main className="min-h-dvh bg-background pb-24">
@@ -56,27 +68,20 @@ function VotaPage() {
         </p>
         <h1 className="text-3xl font-bold mt-2">Vota i colleghi</h1>
         <p className="text-sm text-primary-foreground/80 mt-1">
-          Vota solo i colleghi che conosci bene. Minimo richiesto: <strong>{minRequired}</strong> su {total} (50%).
+          Vota solo chi conosci bene. Minimo: <strong>{minRequired}</strong> su {total} (50%).
         </p>
         <div className="mt-6 bg-primary-foreground/15 rounded-2xl p-4 backdrop-blur-sm">
           <div className="flex justify-between text-sm mb-2">
-            <span>{reachedMin ? "Soglia minima raggiunta ✓" : "Avanzamento"}</span>
-            <span className="font-semibold">{completed}/{total}</span>
+            <span>{reachedMin ? "Soglia minima raggiunta ✓" : "Avanzamento voti"}</span>
+            <span className="font-semibold">{voted}/{total}</span>
           </div>
-          <div className="relative">
-            <Progress value={pct} className="h-2 bg-primary-foreground/20" />
-            {total > 0 && !reachedMin && (
-              <div
-                className="absolute top-0 h-2 w-0.5 bg-gold"
-                style={{ left: `${minPct}%` }}
-                title="Soglia 50%"
-              />
-            )}
-          </div>
-          <p className="text-xs text-primary-foreground/70 mt-2">
+          <Progress value={pct} className="h-2 bg-primary-foreground/20" />
+          <p className="text-xs text-primary-foreground/80 mt-2">
             {reachedMin
-              ? "Puoi continuare a votare altri colleghi o terminare qui."
-              : `Mancano ${minRequired - completed} voti per raggiungere il minimo.`}
+              ? "Ottimo! Puoi continuare o terminare qui."
+              : mancanti === 1
+                ? "Vota almeno 1 altro collega per completare."
+                : `Vota almeno altri ${mancanti} colleghi per completare.`}
           </p>
         </div>
       </header>
@@ -89,14 +94,13 @@ function VotaPage() {
               {mansione}
             </h2>
             <ul className="space-y-2">
-              {list.map((c) => (
-                <li key={c.id}>
-                  <Link
-                    to="/vota/$id"
-                    params={{ id: c.id }}
-                    disabled={c.voted}
-                    className={`flex items-center gap-4 bg-card rounded-2xl p-3 shadow-soft transition-all ${
-                      c.voted ? "opacity-60" : "hover:shadow-card active:scale-[0.98]"
+              {list.map((c) => {
+                const dim = c.skipped || c.voted;
+                return (
+                  <li
+                    key={c.id}
+                    className={`flex items-center gap-3 bg-card rounded-2xl p-3 shadow-soft transition-all ${
+                      dim ? "opacity-60" : ""
                     }`}
                   >
                     <EmployeeAvatar nome={c.nome} cognome={c.cognome} foto_url={c.foto_url} />
@@ -106,16 +110,43 @@ function VotaPage() {
                       </p>
                       <p className="text-xs text-muted-foreground truncate">{c.negozio}</p>
                     </div>
+
                     {c.voted ? (
                       <span className="flex items-center gap-1 text-success text-xs font-medium px-2.5 py-1 rounded-full bg-success/10">
                         <Check className="size-3.5" /> Votato
                       </span>
+                    ) : c.skipped ? (
+                      <button
+                        type="button"
+                        onClick={() => onToggleSkip(c.id, false)}
+                        className="text-xs font-medium px-2.5 py-1.5 rounded-full bg-muted text-muted-foreground hover:bg-muted/70"
+                      >
+                        Annulla
+                      </button>
                     ) : (
-                      <ChevronRight className="text-muted-foreground size-5" />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onToggleSkip(c.id, true)}
+                          aria-label="Non votare"
+                          className="size-9 rounded-full bg-muted text-muted-foreground hover:bg-muted/70 active:scale-95 transition flex items-center justify-center"
+                        >
+                          <X className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigate({ to: "/vota/$id", params: { id: c.id } })}
+                          aria-label="Vota"
+                          className="h-9 px-3 rounded-full bg-primary text-primary-foreground hover:opacity-90 active:scale-95 transition flex items-center gap-1 text-sm font-medium"
+                        >
+                          <Star className="size-4" /> Vota
+                          <ChevronRight className="size-4 -mr-1" />
+                        </button>
+                      </div>
                     )}
-                  </Link>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ))}

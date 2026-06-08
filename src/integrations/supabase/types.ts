@@ -263,6 +263,52 @@ export type Database = {
           },
         ]
       }
+      vote_skips: {
+        Row: {
+          created_at: string
+          id: string
+          period_id: string
+          voted_id: string
+          voter_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          period_id: string
+          voted_id: string
+          voter_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          period_id?: string
+          voted_id?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vote_skips_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "voting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vote_skips_voted_id_fkey"
+            columns: ["voted_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vote_skips_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       votes: {
         Row: {
           created_at: string

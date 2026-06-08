@@ -111,11 +111,63 @@ export const getColleagues = createServerFn({ method: "POST" })
       .eq("voter_id", me.id)
       .eq("period_id", period.id);
 
+    const { data: mySkips } = await supabaseAdmin
+      .from("vote_skips")
+      .select("voted_id")
+      .eq("voter_id", me.id)
+      .eq("period_id", period.id);
+
     const votedSet = new Set((myVotes ?? []).map((v) => v.voted_id));
+    const skippedSet = new Set((mySkips ?? []).map((v) => v.voted_id));
     return {
       period: { id: period.id, anno: period.anno, mese: period.mese },
-      colleagues: (colleagues ?? []).map((c) => ({ ...c, voted: votedSet.has(c.id) })),
+      colleagues: (colleagues ?? []).map((c) => ({
+        ...c,
+        voted: votedSet.has(c.id),
+        skipped: skippedSet.has(c.id),
+      })),
     };
+  });
+
+// === Toggle skip (decidi di non votare un collega) ===
+export const toggleSkip = createServerFn({ method: "POST" })
+  .inputValidator((d: { token: string; votedId: string; skip: boolean }) =>
+    z.object({ token: z.string(), votedId: z.string().uuid(), skip: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const me = await requireEmployee(data.token);
+    if (me.id === data.votedId) throw new Error("Operazione non valida");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const period = await getOrCreateCurrentPeriod();
+    if (period.status === "closed") throw new Error("Periodo di voto chiuso");
+
+    // Non si può saltare un collega già votato
+    const { data: existingVote } = await supabaseAdmin
+      .from("votes")
+      .select("id")
+      .eq("voter_id", me.id)
+      .eq("voted_id", data.votedId)
+      .eq("period_id", period.id)
+      .limit(1);
+    if ((existingVote ?? []).length > 0)
+      throw new Error("Hai già votato questo collega");
+
+    if (data.skip) {
+      await supabaseAdmin
+        .from("vote_skips")
+        .upsert(
+          { period_id: period.id, voter_id: me.id, voted_id: data.votedId },
+          { onConflict: "period_id,voter_id,voted_id" },
+        );
+    } else {
+      await supabaseAdmin
+        .from("vote_skips")
+        .delete()
+        .eq("period_id", period.id)
+        .eq("voter_id", me.id)
+        .eq("voted_id", data.votedId);
+    }
+    return { ok: true };
   });
 
 // === Get colleague detail ===
