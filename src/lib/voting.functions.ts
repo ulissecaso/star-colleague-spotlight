@@ -319,7 +319,7 @@ export const getDashboard = createServerFn({ method: "POST" }).handler(async () 
 
   let fullyDone = 0;
   for (const v of completionByVoter.values()) {
-    if (v >= expectedVotesPerVoter) fullyDone++;
+    if (v >= minRequiredPerVoter) fullyDone++;
   }
 
   const completion = total > 0 ? Math.round((fullyDone / total) * 100) : 0;
