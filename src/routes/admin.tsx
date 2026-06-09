@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Session } from "@supabase/supabase-js";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/admin")({
 const MESI = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
 
 function AdminPage() {
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const bootstrap = useServerFn(adminBootstrap);
@@ -33,7 +34,7 @@ function AdminPage() {
   useEffect(() => {
     let active = true;
 
-    async function checkSession(nextSession: any) {
+    async function checkSession(nextSession: Session | null) {
       if (!active) return;
       setSession(nextSession);
       if (!nextSession) {
@@ -61,7 +62,7 @@ function AdminPage() {
       active = false;
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [bootstrap]);
 
   if (loading) return <main className="p-10 text-center text-muted-foreground">Caricamento…</main>;
   if (!session) return <AdminLogin />;
