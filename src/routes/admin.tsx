@@ -433,3 +433,46 @@ function WinnersTab() {
     </div>
   );
 }
+
+function AccountTab() {
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (pw.length < 8) return toast.error("La password deve avere almeno 8 caratteri.");
+    if (pw !== pw2) return toast.error("Le password non coincidono.");
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pw });
+      if (error) throw error;
+      toast.success("Password aggiornata con successo.");
+      setPw(""); setPw2("");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="bg-card rounded-2xl shadow-soft p-5 max-w-md">
+      <h3 className="font-semibold mb-1">Cambia password</h3>
+      <p className="text-sm text-muted-foreground mb-4">Imposta una nuova password per il tuo account amministratore.</p>
+      <form onSubmit={submit} className="space-y-3">
+        <div>
+          <Label>Nuova password</Label>
+          <Input type="password" minLength={8} required value={pw} onChange={(e) => setPw(e.target.value)} />
+        </div>
+        <div>
+          <Label>Conferma password</Label>
+          <Input type="password" minLength={8} required value={pw2} onChange={(e) => setPw2(e.target.value)} />
+        </div>
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? "…" : "Aggiorna password"}
+        </Button>
+      </form>
+    </div>
+  );
+}
