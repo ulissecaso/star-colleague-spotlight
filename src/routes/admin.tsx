@@ -56,7 +56,7 @@ function AdminPage() {
 
     supabase.auth.getSession().then(({ data }) => checkSession(data.session));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      void checkSession(s);
+      setTimeout(() => void checkSession(s), 0);
     });
     return () => {
       active = false;
