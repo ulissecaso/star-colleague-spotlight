@@ -497,3 +497,153 @@ function AccountTab() {
     </div>
   );
 }
+
+function MonthlyPrizeTab() {
+  const getFn = useServerFn(getCurrentPrize);
+  const setFn = useServerFn(setCurrentPrize);
+  const delFn = useServerFn(deleteCurrentPrize);
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({ queryKey: ["current-prize-admin"], queryFn: () => getFn() });
+
+  const [titolo, setTitolo] = useState("");
+  const [descrizione, setDescrizione] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (data?.prize) {
+      setTitolo(data.prize.titolo ?? "");
+      setDescrizione(data.prize.descrizione ?? "");
+    }
+  }, [data]);
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    setFile(f);
+    if (f) {
+      const reader = new FileReader();
+      reader.onload = () => setPreview(reader.result as string);
+      reader.readAsDataURL(f);
+    } else {
+      setPreview(null);
+    }
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!file && !data?.prize) {
+      toast.error("Seleziona un'immagine.");
+      return;
+    }
+    setSaving(true);
+    try {
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) throw new Error("Immagine troppo grande (max 5MB).");
+        const buf = await file.arrayBuffer();
+        let bin = "";
+        const bytes = new Uint8Array(buf);
+        for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+        const fileBase64 = btoa(bin);
+        await setFn({
+          data: {
+            fileBase64,
+            fileName: file.name,
+            contentType: file.type || "image/jpeg",
+            titolo: titolo || undefined,
+            descrizione: descrizione || undefined,
+          },
+        });
+      } else if (data?.prize) {
+        // Re-upload existing? Skip; require new file to update meta.
+        toast.error("Per aggiornare titolo/descrizione carica una nuova immagine.");
+        return;
+      }
+      toast.success("Premio aggiornato.");
+      setFile(null);
+      setPreview(null);
+      qc.invalidateQueries({ queryKey: ["current-prize-admin"] });
+      qc.invalidateQueries({ queryKey: ["current-prize"] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm("Rimuovere il premio del mese corrente?")) return;
+    try {
+      await delFn();
+      setTitolo("");
+      setDescrizione("");
+      setFile(null);
+      setPreview(null);
+      toast.success("Premio rimosso.");
+      qc.invalidateQueries({ queryKey: ["current-prize-admin"] });
+      qc.invalidateQueries({ queryKey: ["current-prize"] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
+  return (
+    <div className="grid md:grid-cols-2 gap-5">
+      <div className="bg-card rounded-2xl shadow-soft p-5">
+        <h3 className="font-semibold mb-1 flex items-center gap-2"><Gift className="text-gold" /> Premio del mese corrente</h3>
+        <p className="text-sm text-muted-foreground mb-4">L'immagine apparirà nella pagina di accesso dei dipendenti.</p>
+        <form onSubmit={submit} className="space-y-3">
+          <div>
+            <Label>Immagine (JPG/PNG, max 5MB)</Label>
+            <Input type="file" accept="image/*" onChange={onFileChange} />
+          </div>
+          <div>
+            <Label>Titolo (opzionale)</Label>
+            <Input value={titolo} onChange={(e) => setTitolo(e.target.value)} placeholder="Es. Aspirapolvere Dyson V12" />
+          </div>
+          <div>
+            <Label>Descrizione (opzionale)</Label>
+            <Input value={descrizione} onChange={(e) => setDescrizione(e.target.value)} placeholder="Breve descrizione del premio" />
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={saving} className="flex-1">
+              {saving ? "Salvataggio…" : data?.prize ? "Sostituisci immagine" : "Pubblica premio"}
+            </Button>
+            {data?.prize && (
+              <Button type="button" variant="outline" onClick={handleDelete}>
+                <Trash2 className="text-destructive" />
+              </Button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      <div className="bg-card rounded-2xl shadow-soft p-5">
+        <h3 className="font-semibold mb-3">Anteprima</h3>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Caricamento…</p>
+        ) : preview || data?.prize?.image_url ? (
+          <div className="space-y-3">
+            <div className="aspect-[4/3] w-full rounded-2xl overflow-hidden bg-muted">
+              <img
+                src={preview ?? data?.prize?.image_url ?? ""}
+                alt="Anteprima premio"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            {(titolo || descrizione) && (
+              <div>
+                {titolo && <p className="font-semibold">{titolo}</p>}
+                {descrizione && <p className="text-sm text-muted-foreground">{descrizione}</p>}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="aspect-[4/3] w-full rounded-2xl border-2 border-dashed border-border flex items-center justify-center text-muted-foreground text-sm">
+            Nessun premio caricato per questo mese
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
