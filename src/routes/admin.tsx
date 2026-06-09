@@ -31,20 +31,36 @@ function AdminPage() {
   const bootstrap = useServerFn(adminBootstrap);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
-      if (data.session) {
-        try {
-          const res = await bootstrap();
-          setIsAdmin(res.granted);
-        } catch {
-          setIsAdmin(false);
-        }
+    let active = true;
+
+    async function checkSession(nextSession: any) {
+      if (!active) return;
+      setSession(nextSession);
+      if (!nextSession) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      setLoading(true);
+      try {
+        const res = await bootstrap();
+        if (active) setIsAdmin(res.granted);
+      } catch {
+        if (active) setIsAdmin(false);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    supabase.auth.getSession().then(({ data }) => checkSession(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      void checkSession(s);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   if (loading) return <main className="p-10 text-center text-muted-foreground">Caricamento…</main>;
