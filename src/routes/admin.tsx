@@ -17,6 +17,8 @@ import {
   listPeriods, togglePeriod,
 } from "@/lib/employees.functions";
 import { getAdminLeaderboards, getDashboard, calculateWinners, getWinners } from "@/lib/voting.functions";
+import { getCurrentPrize, setCurrentPrize, deleteCurrentPrize } from "@/lib/prizes.functions";
+import { Gift } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Amministrazione" }] }),
