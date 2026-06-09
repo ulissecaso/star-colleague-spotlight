@@ -136,11 +136,13 @@ function AdminDashboard() {
             <TabsTrigger value="dipendenti">Dipendenti</TabsTrigger>
             <TabsTrigger value="periodi">Periodi</TabsTrigger>
             <TabsTrigger value="premi">Premi</TabsTrigger>
+            <TabsTrigger value="account">Account</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard"><DashboardTab /></TabsContent>
           <TabsContent value="dipendenti"><EmployeesTab /></TabsContent>
           <TabsContent value="periodi"><PeriodsTab /></TabsContent>
           <TabsContent value="premi"><WinnersTab /></TabsContent>
+          <TabsContent value="account"><AccountTab /></TabsContent>
         </Tabs>
       </div>
     </main>
