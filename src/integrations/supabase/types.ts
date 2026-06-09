@@ -109,6 +109,44 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_prizes: {
+        Row: {
+          created_at: string
+          descrizione: string | null
+          id: string
+          image_path: string
+          period_id: string
+          titolo: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descrizione?: string | null
+          id?: string
+          image_path: string
+          period_id: string
+          titolo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descrizione?: string | null
+          id?: string
+          image_path?: string
+          period_id?: string
+          titolo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_prizes_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: true
+            referencedRelation: "voting_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_winners: {
         Row: {
           categoria: string
