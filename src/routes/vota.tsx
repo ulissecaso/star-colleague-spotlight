@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
-import { Check, ChevronRight, X, Star } from "lucide-react";
+import { Check, ChevronRight, X, Star, Building2 } from "lucide-react";
 import { getColleagues, toggleSkip } from "@/lib/voting.functions";
 import { getSession } from "@/lib/employee-session";
 import { EmployeeAvatar } from "@/components/EmployeeAvatar";
