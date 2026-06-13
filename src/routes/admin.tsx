@@ -156,6 +156,7 @@ function AdminDashboard() {
             <TabsTrigger value="periodi">Periodi</TabsTrigger>
             <TabsTrigger value="premio-mese">Premio del mese</TabsTrigger>
             <TabsTrigger value="premi">Vincitori</TabsTrigger>
+            <TabsTrigger value="azienda">Valutazione azienda</TabsTrigger>
             <TabsTrigger value="account">Account</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard"><DashboardTab /></TabsContent>
@@ -163,6 +164,7 @@ function AdminDashboard() {
           <TabsContent value="periodi"><PeriodsTab /></TabsContent>
           <TabsContent value="premio-mese"><MonthlyPrizeTab /></TabsContent>
           <TabsContent value="premi"><WinnersTab /></TabsContent>
+          <TabsContent value="azienda"><CompanyTab /></TabsContent>
           <TabsContent value="account"><AccountTab /></TabsContent>
         </Tabs>
       </div>
