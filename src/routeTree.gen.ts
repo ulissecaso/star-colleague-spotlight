@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VotaAziendaRouteImport } from './routes/vota-azienda'
 import { Route as VotaRouteImport } from './routes/vota'
 import { Route as ClassificheRouteImport } from './routes/classifiche'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VotaIdRouteImport } from './routes/vota_.$id'
 
+const VotaAziendaRoute = VotaAziendaRouteImport.update({
+  id: '/vota-azienda',
+  path: '/vota-azienda',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VotaRoute = VotaRouteImport.update({
   id: '/vota',
   path: '/vota',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/classifiche': typeof ClassificheRoute
   '/vota': typeof VotaRoute
+  '/vota-azienda': typeof VotaAziendaRoute
   '/vota/$id': typeof VotaIdRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/classifiche': typeof ClassificheRoute
   '/vota': typeof VotaRoute
+  '/vota-azienda': typeof VotaAziendaRoute
   '/vota/$id': typeof VotaIdRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,28 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/classifiche': typeof ClassificheRoute
   '/vota': typeof VotaRoute
+  '/vota-azienda': typeof VotaAziendaRoute
   '/vota_/$id': typeof VotaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/classifiche' | '/vota' | '/vota/$id'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/classifiche'
+    | '/vota'
+    | '/vota-azienda'
+    | '/vota/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/classifiche' | '/vota' | '/vota/$id'
-  id: '__root__' | '/' | '/admin' | '/classifiche' | '/vota' | '/vota_/$id'
+  to: '/' | '/admin' | '/classifiche' | '/vota' | '/vota-azienda' | '/vota/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/classifiche'
+    | '/vota'
+    | '/vota-azienda'
+    | '/vota_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,11 +98,19 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ClassificheRoute: typeof ClassificheRoute
   VotaRoute: typeof VotaRoute
+  VotaAziendaRoute: typeof VotaAziendaRoute
   VotaIdRoute: typeof VotaIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/vota-azienda': {
+      id: '/vota-azienda'
+      path: '/vota-azienda'
+      fullPath: '/vota-azienda'
+      preLoaderRoute: typeof VotaAziendaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vota': {
       id: '/vota'
       path: '/vota'
@@ -124,6 +154,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ClassificheRoute: ClassificheRoute,
   VotaRoute: VotaRoute,
+  VotaAziendaRoute: VotaAziendaRoute,
   VotaIdRoute: VotaIdRoute,
 }
 export const routeTree = rootRouteImport

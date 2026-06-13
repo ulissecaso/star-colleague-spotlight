@@ -18,6 +18,7 @@ import {
 } from "@/lib/employees.functions";
 import { getAdminLeaderboards, getDashboard, calculateWinners, getWinners } from "@/lib/voting.functions";
 import { getCurrentPrize, setCurrentPrize, deleteCurrentPrize } from "@/lib/prizes.functions";
+import { getCompanyResults } from "@/lib/company.functions";
 import { Gift } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -156,6 +157,7 @@ function AdminDashboard() {
             <TabsTrigger value="periodi">Periodi</TabsTrigger>
             <TabsTrigger value="premio-mese">Premio del mese</TabsTrigger>
             <TabsTrigger value="premi">Vincitori</TabsTrigger>
+            <TabsTrigger value="azienda">Valutazione azienda</TabsTrigger>
             <TabsTrigger value="account">Account</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard"><DashboardTab /></TabsContent>
@@ -163,6 +165,7 @@ function AdminDashboard() {
           <TabsContent value="periodi"><PeriodsTab /></TabsContent>
           <TabsContent value="premio-mese"><MonthlyPrizeTab /></TabsContent>
           <TabsContent value="premi"><WinnersTab /></TabsContent>
+          <TabsContent value="azienda"><CompanyTab /></TabsContent>
           <TabsContent value="account"><AccountTab /></TabsContent>
         </Tabs>
       </div>
@@ -644,6 +647,71 @@ function MonthlyPrizeTab() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function CompanyTab() {
+  const fn = useServerFn(getCompanyResults);
+  const { data, isLoading } = useQuery({
+    queryKey: ["company-results"],
+    queryFn: () => fn({ data: {} }),
+  });
+
+  if (isLoading || !data) return <p className="text-muted-foreground p-4">Caricamento…</p>;
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-card rounded-2xl p-4 shadow-soft">
+          <p className="text-xs uppercase text-muted-foreground">Punteggio aziendale</p>
+          <p className="text-3xl font-bold mt-1">{data.overallScore}<span className="text-sm font-normal text-muted-foreground">/100</span></p>
+        </div>
+        <div className="bg-card rounded-2xl p-4 shadow-soft">
+          <p className="text-xs uppercase text-muted-foreground">Partecipazione</p>
+          <p className="text-3xl font-bold mt-1">{data.participationPct}<span className="text-sm font-normal text-muted-foreground">%</span></p>
+          <p className="text-xs text-muted-foreground mt-1">{data.participants} su {data.totalEmployees} dipendenti</p>
+        </div>
+        <div className="bg-card rounded-2xl p-4 shadow-soft">
+          <p className="text-xs uppercase text-muted-foreground">Commenti ricevuti</p>
+          <p className="text-3xl font-bold mt-1">{data.commenti.length}</p>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-2xl shadow-soft overflow-hidden">
+        <div className="px-4 py-3 border-b border-border">
+          <h3 className="font-semibold">Risultati per criterio</h3>
+        </div>
+        <ul className="divide-y divide-border">
+          {data.perCriterio.map((c) => (
+            <li key={c.key} className="px-4 py-3 flex items-center gap-4">
+              <div className="flex-1">
+                <p className="font-medium text-sm">{c.label}</p>
+                <div className="h-2 bg-muted rounded-full mt-2 overflow-hidden">
+                  <div className="h-full bg-primary" style={{ width: `${c.score}%` }} />
+                </div>
+              </div>
+              <div className="text-right min-w-20">
+                <p className="font-semibold">{c.media.toFixed(2)}<span className="text-xs text-muted-foreground">/5</span></p>
+                <p className="text-xs text-muted-foreground">{c.count} voti</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {data.commenti.length > 0 && (
+        <div className="bg-card rounded-2xl shadow-soft overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <h3 className="font-semibold">Commenti anonimi</h3>
+          </div>
+          <ul className="divide-y divide-border">
+            {data.commenti.map((c, i) => (
+              <li key={i} className="px-4 py-3 text-sm whitespace-pre-wrap">{c}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

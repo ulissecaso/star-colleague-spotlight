@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
-import { Check, ChevronRight, X, Star } from "lucide-react";
+import { Check, ChevronRight, X, Star, Building2 } from "lucide-react";
 import { getColleagues, toggleSkip } from "@/lib/voting.functions";
 import { getSession } from "@/lib/employee-session";
 import { EmployeeAvatar } from "@/components/EmployeeAvatar";
@@ -87,6 +87,20 @@ function VotaPage() {
       </header>
 
       <div className="px-5 mt-6 space-y-7 max-w-md mx-auto">
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/vota-azienda" })}
+          className="w-full flex items-center gap-3 bg-card rounded-2xl p-4 shadow-soft text-left hover:bg-accent/40 transition"
+        >
+          <div className="size-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <Building2 className="size-5" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-foreground">Valuta l'azienda</p>
+            <p className="text-xs text-muted-foreground">10 domande anonime sull'ambiente di lavoro</p>
+          </div>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </button>
         {isLoading && <p className="text-muted-foreground text-center py-10">Caricamento…</p>}
         {grouped.map(([mansione, list]) => (
           <section key={mansione}>
