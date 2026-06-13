@@ -18,6 +18,7 @@ import {
 } from "@/lib/employees.functions";
 import { getAdminLeaderboards, getDashboard, calculateWinners, getWinners } from "@/lib/voting.functions";
 import { getCurrentPrize, setCurrentPrize, deleteCurrentPrize } from "@/lib/prizes.functions";
+import { getCompanyResults } from "@/lib/company.functions";
 import { Gift } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
