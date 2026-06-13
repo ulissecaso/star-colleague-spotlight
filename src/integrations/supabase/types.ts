@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      company_votes: {
+        Row: {
+          commento: string | null
+          created_at: string
+          criterio: string
+          device_fingerprint: string | null
+          id: string
+          period_id: string
+          punteggio: number
+          voter_id: string
+        }
+        Insert: {
+          commento?: string | null
+          created_at?: string
+          criterio: string
+          device_fingerprint?: string | null
+          id?: string
+          period_id: string
+          punteggio: number
+          voter_id: string
+        }
+        Update: {
+          commento?: string | null
+          created_at?: string
+          criterio?: string
+          device_fingerprint?: string | null
+          id?: string
+          period_id?: string
+          punteggio?: number
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_votes_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "voting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disciplinary_actions: {
         Row: {
           created_at: string
