@@ -283,6 +283,51 @@ export const getAdminLeaderboards = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => computeLeaderboards(data.periodId));
 
+// === Admin: anonymous comments on employees ===
+export const getEmployeeComments = createServerFn({ method: "POST" })
+  .inputValidator((d: { periodId?: string }) =>
+    z.object({ periodId: z.string().uuid().optional() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const period = data.periodId
+      ? (await supabaseAdmin.from("voting_periods").select("*").eq("id", data.periodId).maybeSingle()).data
+      : await getOrCreateCurrentPeriod();
+    if (!period) throw new Error("Periodo non trovato");
+
+    const { data: comments } = await supabaseAdmin
+      .from("vote_comments")
+      .select("id, voted_id, punto_forza, suggerimento, created_at")
+      .eq("period_id", period.id)
+      .order("created_at", { ascending: false });
+
+    const { data: employees } = await supabaseAdmin
+      .from("employees")
+      .select("id, nome, cognome, mansione, negozio, foto_url");
+
+    const empMap = new Map((employees ?? []).map((e) => [e.id, e]));
+    const grouped = new Map<string, { employee: typeof employees extends Array<infer T> ? T : any; items: { id: string; punto_forza: string | null; suggerimento: string | null; created_at: string }[] }>();
+    for (const c of comments ?? []) {
+      if (!c.punto_forza && !c.suggerimento) continue;
+      const emp = empMap.get(c.voted_id);
+      if (!emp) continue;
+      const g = grouped.get(c.voted_id) ?? { employee: emp, items: [] };
+      g.items.push({
+        id: c.id,
+        punto_forza: c.punto_forza,
+        suggerimento: c.suggerimento,
+        created_at: c.created_at,
+      });
+      grouped.set(c.voted_id, g);
+    }
+    return {
+      period,
+      groups: Array.from(grouped.values()).sort((a: any, b: any) =>
+        (a.employee.cognome ?? "").localeCompare(b.employee.cognome ?? ""),
+      ),
+    };
+  });
+
 async function computeLeaderboards(periodId?: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const period = periodId
