@@ -16,7 +16,7 @@ import {
   adminBootstrap, listEmployees, upsertEmployee, deleteEmployee, importEmployeesCsv,
   listPeriods, togglePeriod,
 } from "@/lib/employees.functions";
-import { getAdminLeaderboards, getDashboard, calculateWinners, getWinners } from "@/lib/voting.functions";
+import { getAdminLeaderboards, getDashboard, calculateWinners, getWinners, getEmployeeComments } from "@/lib/voting.functions";
 import { getCurrentPrize, setCurrentPrize, deleteCurrentPrize } from "@/lib/prizes.functions";
 import { getCompanyResults } from "@/lib/company.functions";
 import { Gift } from "lucide-react";
@@ -158,6 +158,7 @@ function AdminDashboard() {
             <TabsTrigger value="premio-mese">Premio del mese</TabsTrigger>
             <TabsTrigger value="premi">Vincitori</TabsTrigger>
             <TabsTrigger value="azienda">Valutazione azienda</TabsTrigger>
+            <TabsTrigger value="commenti">Commenti dipendenti</TabsTrigger>
             <TabsTrigger value="account">Account</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard"><DashboardTab /></TabsContent>
@@ -166,6 +167,7 @@ function AdminDashboard() {
           <TabsContent value="premio-mese"><MonthlyPrizeTab /></TabsContent>
           <TabsContent value="premi"><WinnersTab /></TabsContent>
           <TabsContent value="azienda"><CompanyTab /></TabsContent>
+          <TabsContent value="commenti"><EmployeeCommentsTab /></TabsContent>
           <TabsContent value="account"><AccountTab /></TabsContent>
         </Tabs>
       </div>
@@ -712,6 +714,76 @@ function CompanyTab() {
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+function EmployeeCommentsTab() {
+  const list = useServerFn(listPeriods);
+  const fetchFn = useServerFn(getEmployeeComments);
+  const { data: periods } = useQuery({ queryKey: ["periods"], queryFn: () => list() });
+  const [periodId, setPeriodId] = useState<string | undefined>();
+  const { data, isLoading } = useQuery({
+    queryKey: ["empComments", periodId ?? "current"],
+    queryFn: () => fetchFn({ data: { periodId } }),
+  });
+
+  return (
+    <div className="space-y-5">
+      <div className="bg-card rounded-2xl shadow-soft p-5">
+        <h3 className="font-semibold mb-3">Commenti anonimi sui dipendenti</h3>
+        <div className="flex gap-2 items-center">
+          <select
+            className="border border-input rounded-md p-2 text-sm bg-background"
+            value={periodId ?? ""}
+            onChange={(e) => setPeriodId(e.target.value || undefined)}
+          >
+            <option value="">Periodo corrente</option>
+            {periods?.periods.map((p: any) => (
+              <option key={p.id} value={p.id}>{MESI[p.mese - 1]} {p.anno}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {isLoading && <p className="text-sm text-muted-foreground">Caricamento…</p>}
+
+      {data && data.groups.length === 0 && (
+        <p className="text-sm text-muted-foreground bg-card rounded-2xl p-6 text-center">
+          Nessun commento ricevuto per questo periodo.
+        </p>
+      )}
+
+      <div className="space-y-4">
+        {data?.groups.map((g: any) => (
+          <div key={g.employee.id} className="bg-card rounded-2xl shadow-soft overflow-hidden">
+            <div className="px-5 py-3 border-b border-border bg-muted/30">
+              <p className="font-semibold">{g.employee.nome} {g.employee.cognome}</p>
+              <p className="text-xs text-muted-foreground">
+                {g.employee.mansione} • {g.employee.negozio} • {g.items.length} {g.items.length === 1 ? "commento" : "commenti"}
+              </p>
+            </div>
+            <ul className="divide-y divide-border">
+              {g.items.map((it: any) => (
+                <li key={it.id} className="px-5 py-3 space-y-2">
+                  {it.punto_forza && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-emerald-600 font-semibold">Punto di forza</p>
+                      <p className="text-sm whitespace-pre-wrap">{it.punto_forza}</p>
+                    </div>
+                  )}
+                  {it.suggerimento && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-amber-600 font-semibold">Suggerimento</p>
+                      <p className="text-sm whitespace-pre-wrap">{it.suggerimento}</p>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
