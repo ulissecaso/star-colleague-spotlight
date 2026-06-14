@@ -314,7 +314,7 @@ function EmployeesTab() {
               </tr>
             ))}
             {(!data || data.employees.length === 0) && (
-              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">Nessun dipendente. Importa un CSV o crea il primo.</td></tr>
+              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Nessun dipendente. Importa un CSV o crea il primo.</td></tr>
             )}
           </tbody>
         </table>
