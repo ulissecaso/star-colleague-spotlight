@@ -332,11 +332,10 @@ function EmployeesTab() {
                   id: editing.id,
                   nome: editing.nome ?? "",
                   cognome: editing.cognome ?? "",
-                  telefono: editing.telefono ?? "",
                   codice_accesso: editing.codice_accesso ?? "",
                   mansione: editing.mansione ?? "",
                   negozio: editing.negozio ?? "",
-                  data_assunzione: editing.data_assunzione ?? "",
+                  reparto: editing.reparto ?? "",
                   foto_url: editing.foto_url ?? "",
                   attivo: !!editing.attivo,
                   escluso_premi: !!editing.escluso_premi,
@@ -348,10 +347,9 @@ function EmployeesTab() {
                 <div><Label>Nome</Label><Input required value={editing.nome ?? ""} onChange={(e) => setEditing({ ...editing, nome: e.target.value })} /></div>
                 <div><Label>Cognome</Label><Input required value={editing.cognome ?? ""} onChange={(e) => setEditing({ ...editing, cognome: e.target.value })} /></div>
                 <div><Label>Codice accesso</Label><Input required value={editing.codice_accesso ?? ""} onChange={(e) => setEditing({ ...editing, codice_accesso: e.target.value.toUpperCase() })} /></div>
-                <div><Label>Telefono</Label><Input value={editing.telefono ?? ""} onChange={(e) => setEditing({ ...editing, telefono: e.target.value })} /></div>
                 <div><Label>Mansione</Label><Input required value={editing.mansione ?? ""} onChange={(e) => setEditing({ ...editing, mansione: e.target.value })} /></div>
+                <div className="col-span-2"><Label>Reparto</Label><Input placeholder="es. Ufficio Master, Punto vendita Villaricca, Logistica…" value={editing.reparto ?? ""} onChange={(e) => setEditing({ ...editing, reparto: e.target.value })} /></div>
                 <div><Label>Negozio</Label><Input required value={editing.negozio ?? ""} onChange={(e) => setEditing({ ...editing, negozio: e.target.value })} /></div>
-                <div><Label>Data assunzione</Label><Input type="date" value={editing.data_assunzione ?? ""} onChange={(e) => setEditing({ ...editing, data_assunzione: e.target.value })} /></div>
                 <div><Label>Foto URL</Label><Input value={editing.foto_url ?? ""} onChange={(e) => setEditing({ ...editing, foto_url: e.target.value })} /></div>
               </div>
               <div className="flex items-center gap-4">
