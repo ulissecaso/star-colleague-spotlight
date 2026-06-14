@@ -19,7 +19,9 @@ import {
 import { getAdminLeaderboards, getDashboard, calculateWinners, getWinners, getEmployeeComments } from "@/lib/voting.functions";
 import { getCurrentPrize, setCurrentPrize, deleteCurrentPrize } from "@/lib/prizes.functions";
 import { getCompanyResults } from "@/lib/company.functions";
-import { Gift } from "lucide-react";
+import { Gift, Settings } from "lucide-react";
+import { listOptions, addOption, deleteOption } from "@/lib/settings.functions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Amministrazione" }] }),
@@ -160,6 +162,7 @@ function AdminDashboard() {
             <TabsTrigger value="azienda">Valutazione azienda</TabsTrigger>
             <TabsTrigger value="commenti">Commenti dipendenti</TabsTrigger>
             <TabsTrigger value="account">Account</TabsTrigger>
+            <TabsTrigger value="impostazioni">Impostazioni</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard"><DashboardTab /></TabsContent>
           <TabsContent value="dipendenti"><EmployeesTab /></TabsContent>
@@ -169,6 +172,7 @@ function AdminDashboard() {
           <TabsContent value="azienda"><CompanyTab /></TabsContent>
           <TabsContent value="commenti"><EmployeeCommentsTab /></TabsContent>
           <TabsContent value="account"><AccountTab /></TabsContent>
+          <TabsContent value="impostazioni"><SettingsTab /></TabsContent>
         </Tabs>
       </div>
     </main>
@@ -348,8 +352,25 @@ function EmployeesTab() {
                 <div><Label>Cognome</Label><Input required value={editing.cognome ?? ""} onChange={(e) => setEditing({ ...editing, cognome: e.target.value })} /></div>
                 <div><Label>Codice accesso</Label><Input required value={editing.codice_accesso ?? ""} onChange={(e) => setEditing({ ...editing, codice_accesso: e.target.value.toUpperCase() })} /></div>
                 <div><Label>Mansione</Label><Input required value={editing.mansione ?? ""} onChange={(e) => setEditing({ ...editing, mansione: e.target.value })} /></div>
-                <div className="col-span-2"><Label>Reparto</Label><Input placeholder="es. Ufficio Master, Punto vendita Villaricca, Logistica…" value={editing.reparto ?? ""} onChange={(e) => setEditing({ ...editing, reparto: e.target.value })} /></div>
-                <div><Label>Negozio</Label><Input required value={editing.negozio ?? ""} onChange={(e) => setEditing({ ...editing, negozio: e.target.value })} /></div>
+                <div className="col-span-2">
+                  <Label>Reparto</Label>
+                  <OptionsSelect
+                    tipo="reparto"
+                    value={editing.reparto ?? ""}
+                    onChange={(v) => setEditing({ ...editing, reparto: v })}
+                    placeholder="Seleziona reparto…"
+                  />
+                </div>
+                <div>
+                  <Label>Negozio</Label>
+                  <OptionsSelect
+                    tipo="negozio"
+                    value={editing.negozio ?? ""}
+                    onChange={(v) => setEditing({ ...editing, negozio: v })}
+                    placeholder="Seleziona negozio…"
+                    required
+                  />
+                </div>
                 <div><Label>Foto URL</Label><Input value={editing.foto_url ?? ""} onChange={(e) => setEditing({ ...editing, foto_url: e.target.value })} /></div>
               </div>
               <div className="flex items-center gap-4">
@@ -783,6 +804,115 @@ function EmployeeCommentsTab() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function OptionsSelect({ tipo, value, onChange, placeholder, required }: {
+  tipo: "reparto" | "negozio";
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  required?: boolean;
+}) {
+  const list = useServerFn(listOptions);
+  const { data } = useQuery({
+    queryKey: ["app_options", tipo],
+    queryFn: () => list({ data: { tipo } }),
+  });
+  const options = data?.options ?? [];
+
+  return (
+    <Select value={value} onValueChange={onChange} required={required}>
+      <SelectTrigger>
+        <SelectValue placeholder={placeholder ?? "Seleziona…"} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o: any) => (
+          <SelectItem key={o.id} value={o.valore}>{o.valore}</SelectItem>
+        ))}
+        {options.length === 0 && (
+          <div className="p-2 text-xs text-muted-foreground">Nessuna opzione — aggiungila in Impostazioni</div>
+        )}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function SettingsTab() {
+  return (
+    <div className="space-y-6">
+      <OptionManager tipo="reparto" label="Reparti" />
+      <OptionManager tipo="negozio" label="Negozi / Sedi" />
+    </div>
+  );
+}
+
+function OptionManager({ tipo, label }: { tipo: "reparto" | "negozio"; label: string }) {
+  const list = useServerFn(listOptions);
+  const add = useServerFn(addOption);
+  const del = useServerFn(deleteOption);
+  const qc = useQueryClient();
+  const [newValue, setNewValue] = useState("");
+  const { data } = useQuery({
+    queryKey: ["app_options", tipo],
+    queryFn: () => list({ data: { tipo } }),
+  });
+  const options = data?.options ?? [];
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newValue.trim()) return;
+    try {
+      await add({ data: { tipo, valore: newValue.trim() } });
+      toast.success("Aggiunto");
+      setNewValue("");
+      qc.invalidateQueries({ queryKey: ["app_options", tipo] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
+  async function handleDelete(id: string, valore: string) {
+    if (!confirm(`Eliminare "${valore}"?`)) return;
+    try {
+      await del({ data: { id } });
+      toast.success("Rimosso");
+      qc.invalidateQueries({ queryKey: ["app_options", tipo] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
+  return (
+    <div className="bg-card rounded-2xl p-5 shadow-soft">
+      <h3 className="font-semibold mb-4 flex items-center gap-2"><Settings className="size-4" />{label}</h3>
+      <form onSubmit={handleAdd} className="flex gap-2 mb-4">
+        <Input
+          value={newValue}
+          onChange={(e) => setNewValue(e.target.value)}
+          placeholder={`Nuovo ${tipo}…`}
+          className="flex-1"
+        />
+        <Button type="submit" size="sm"><Plus /> Aggiungi</Button>
+      </form>
+      <ul className="divide-y divide-border">
+        {options.map((o: any) => (
+          <li key={o.id} className="flex items-center justify-between py-2 px-1">
+            <span className="text-sm">{o.valore}</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleDelete(o.id, o.valore)}
+            >
+              <Trash2 className="size-4 text-destructive" />
+            </Button>
+          </li>
+        ))}
+        {options.length === 0 && (
+          <li className="py-4 text-center text-sm text-muted-foreground">Nessuna opzione ancora</li>
+        )}
+      </ul>
     </div>
   );
 }
