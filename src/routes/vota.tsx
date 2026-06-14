@@ -38,8 +38,9 @@ function VotaPage() {
     if (!data) return [];
     const map = new Map<string, typeof data.colleagues>();
     for (const c of data.colleagues) {
-      if (!map.has(c.mansione)) map.set(c.mansione, []);
-      map.get(c.mansione)!.push(c);
+      const key = (c as any).reparto || "Senza reparto";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(c);
     }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [data]);
