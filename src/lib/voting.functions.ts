@@ -99,10 +99,10 @@ export const getColleagues = createServerFn({ method: "POST" })
 
     const { data: colleagues } = await supabaseAdmin
       .from("employees")
-      .select("id, nome, cognome, mansione, negozio, foto_url")
+      .select("id, nome, cognome, mansione, negozio, reparto, foto_url")
       .eq("attivo", true)
       .neq("id", me.id)
-      .order("mansione")
+      .order("reparto")
       .order("cognome");
 
     const { data: myVotes } = await supabaseAdmin

@@ -279,7 +279,7 @@ function EmployeesTab() {
         <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload /> Importa CSV</Button>
         <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleCsv} />
         <a
-          href={`data:text/csv;charset=utf-8,${encodeURIComponent("nome;cognome;telefono;codice_accesso;mansione;negozio;data_assunzione;foto_url\nMario;Rossi;+393331234567;MR001;Commesso;Milano Centro;2023-01-15;")}`}
+          href={`data:text/csv;charset=utf-8,${encodeURIComponent("nome;cognome;codice_accesso;mansione;reparto;negozio;foto_url\nIlaria;Bianchi;IB001;Impiegata;Ufficio Master;Sede Centrale;")}`}
           download="template_dipendenti.csv"
           className="text-xs text-muted-foreground self-center underline"
         >Scarica template</a>
@@ -288,7 +288,7 @@ function EmployeesTab() {
       <div className="bg-card rounded-2xl shadow-soft overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted text-muted-foreground">
-            <tr><th className="text-left p-3">Nome</th><th className="text-left p-3">Codice</th><th className="text-left p-3">Mansione</th><th className="text-left p-3">Negozio</th><th className="p-3">Stato</th><th></th></tr>
+            <tr><th className="text-left p-3">Nome</th><th className="text-left p-3">Codice</th><th className="text-left p-3">Mansione</th><th className="text-left p-3">Reparto</th><th className="text-left p-3">Negozio</th><th className="p-3">Stato</th><th></th></tr>
           </thead>
           <tbody>
             {data?.employees.map((e: any) => (
@@ -296,6 +296,7 @@ function EmployeesTab() {
                 <td className="p-3">{e.nome} {e.cognome}</td>
                 <td className="p-3 font-mono text-xs">{e.codice_accesso}</td>
                 <td className="p-3">{e.mansione}</td>
+                <td className="p-3">{e.reparto || <span className="text-muted-foreground">—</span>}</td>
                 <td className="p-3">{e.negozio}</td>
                 <td className="p-3 text-center">
                   {!e.attivo && <span className="text-xs text-destructive">Inattivo</span>}
@@ -313,7 +314,7 @@ function EmployeesTab() {
               </tr>
             ))}
             {(!data || data.employees.length === 0) && (
-              <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">Nessun dipendente. Importa un CSV o crea il primo.</td></tr>
+              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Nessun dipendente. Importa un CSV o crea il primo.</td></tr>
             )}
           </tbody>
         </table>
@@ -331,11 +332,10 @@ function EmployeesTab() {
                   id: editing.id,
                   nome: editing.nome ?? "",
                   cognome: editing.cognome ?? "",
-                  telefono: editing.telefono ?? "",
                   codice_accesso: editing.codice_accesso ?? "",
                   mansione: editing.mansione ?? "",
                   negozio: editing.negozio ?? "",
-                  data_assunzione: editing.data_assunzione ?? "",
+                  reparto: editing.reparto ?? "",
                   foto_url: editing.foto_url ?? "",
                   attivo: !!editing.attivo,
                   escluso_premi: !!editing.escluso_premi,
@@ -347,10 +347,9 @@ function EmployeesTab() {
                 <div><Label>Nome</Label><Input required value={editing.nome ?? ""} onChange={(e) => setEditing({ ...editing, nome: e.target.value })} /></div>
                 <div><Label>Cognome</Label><Input required value={editing.cognome ?? ""} onChange={(e) => setEditing({ ...editing, cognome: e.target.value })} /></div>
                 <div><Label>Codice accesso</Label><Input required value={editing.codice_accesso ?? ""} onChange={(e) => setEditing({ ...editing, codice_accesso: e.target.value.toUpperCase() })} /></div>
-                <div><Label>Telefono</Label><Input value={editing.telefono ?? ""} onChange={(e) => setEditing({ ...editing, telefono: e.target.value })} /></div>
                 <div><Label>Mansione</Label><Input required value={editing.mansione ?? ""} onChange={(e) => setEditing({ ...editing, mansione: e.target.value })} /></div>
+                <div className="col-span-2"><Label>Reparto</Label><Input placeholder="es. Ufficio Master, Punto vendita Villaricca, Logistica…" value={editing.reparto ?? ""} onChange={(e) => setEditing({ ...editing, reparto: e.target.value })} /></div>
                 <div><Label>Negozio</Label><Input required value={editing.negozio ?? ""} onChange={(e) => setEditing({ ...editing, negozio: e.target.value })} /></div>
-                <div><Label>Data assunzione</Label><Input type="date" value={editing.data_assunzione ?? ""} onChange={(e) => setEditing({ ...editing, data_assunzione: e.target.value })} /></div>
                 <div><Label>Foto URL</Label><Input value={editing.foto_url ?? ""} onChange={(e) => setEditing({ ...editing, foto_url: e.target.value })} /></div>
               </div>
               <div className="flex items-center gap-4">

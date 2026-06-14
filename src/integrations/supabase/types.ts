@@ -113,6 +113,7 @@ export type Database = {
           negozio: string
           nome: string
           primo_accesso_at: string | null
+          reparto: string | null
           session_token: string | null
           telefono: string | null
           updated_at: string
@@ -132,6 +133,7 @@ export type Database = {
           negozio: string
           nome: string
           primo_accesso_at?: string | null
+          reparto?: string | null
           session_token?: string | null
           telefono?: string | null
           updated_at?: string
@@ -151,6 +153,7 @@ export type Database = {
           negozio?: string
           nome?: string
           primo_accesso_at?: string | null
+          reparto?: string | null
           session_token?: string | null
           telefono?: string | null
           updated_at?: string
