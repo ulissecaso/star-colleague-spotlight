@@ -125,6 +125,7 @@ export const importEmployeesCsv = createServerFn({ method: "POST" })
           codice_accesso: codice,
           mansione: norm(r.mansione || r.Mansione) || "Non specificata",
           negozio: norm(r.negozio || r.Negozio) || "Non specificato",
+          reparto: norm(r.reparto || r.Reparto) || null,
           data_assunzione: norm(r.data_assunzione || r.dataAssunzione) || null,
           foto_url: norm(r.foto_url || r.foto) || null,
           attivo: true,
