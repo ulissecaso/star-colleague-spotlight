@@ -47,6 +47,7 @@ export const upsertEmployee = createServerFn({ method: "POST" })
     codice_accesso: string;
     mansione: string;
     negozio: string;
+    reparto?: string;
     data_assunzione?: string;
     foto_url?: string;
     attivo: boolean;
@@ -62,6 +63,7 @@ export const upsertEmployee = createServerFn({ method: "POST" })
         codice_accesso: z.string().min(3).max(40),
         mansione: z.string().min(1).max(80),
         negozio: z.string().min(1).max(80),
+        reparto: z.string().max(80).optional(),
         data_assunzione: z.string().optional(),
         foto_url: z.string().url().optional().or(z.literal("")),
         attivo: z.boolean(),
@@ -78,6 +80,7 @@ export const upsertEmployee = createServerFn({ method: "POST" })
       codice_accesso: data.codice_accesso.trim().toUpperCase(),
       foto_url: data.foto_url || null,
       data_assunzione: data.data_assunzione || null,
+      reparto: data.reparto || null,
       motivo_esclusione: data.motivo_esclusione || null,
     };
     if (data.id) {
