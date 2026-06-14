@@ -288,7 +288,7 @@ function EmployeesTab() {
       <div className="bg-card rounded-2xl shadow-soft overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted text-muted-foreground">
-            <tr><th className="text-left p-3">Nome</th><th className="text-left p-3">Codice</th><th className="text-left p-3">Mansione</th><th className="text-left p-3">Negozio</th><th className="p-3">Stato</th><th></th></tr>
+            <tr><th className="text-left p-3">Nome</th><th className="text-left p-3">Codice</th><th className="text-left p-3">Mansione</th><th className="text-left p-3">Reparto</th><th className="text-left p-3">Negozio</th><th className="p-3">Stato</th><th></th></tr>
           </thead>
           <tbody>
             {data?.employees.map((e: any) => (
@@ -296,6 +296,7 @@ function EmployeesTab() {
                 <td className="p-3">{e.nome} {e.cognome}</td>
                 <td className="p-3 font-mono text-xs">{e.codice_accesso}</td>
                 <td className="p-3">{e.mansione}</td>
+                <td className="p-3">{e.reparto || <span className="text-muted-foreground">—</span>}</td>
                 <td className="p-3">{e.negozio}</td>
                 <td className="p-3 text-center">
                   {!e.attivo && <span className="text-xs text-destructive">Inattivo</span>}
