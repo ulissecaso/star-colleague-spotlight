@@ -279,7 +279,7 @@ function EmployeesTab() {
         <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload /> Importa CSV</Button>
         <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleCsv} />
         <a
-          href={`data:text/csv;charset=utf-8,${encodeURIComponent("nome;cognome;telefono;codice_accesso;mansione;negozio;data_assunzione;foto_url\nMario;Rossi;+393331234567;MR001;Commesso;Milano Centro;2023-01-15;")}`}
+          href={`data:text/csv;charset=utf-8,${encodeURIComponent("nome;cognome;codice_accesso;mansione;reparto;negozio;foto_url\nIlaria;Bianchi;IB001;Impiegata;Ufficio Master;Sede Centrale;")}`}
           download="template_dipendenti.csv"
           className="text-xs text-muted-foreground self-center underline"
         >Scarica template</a>
