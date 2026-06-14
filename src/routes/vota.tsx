@@ -123,7 +123,7 @@ function VotaPage() {
                       <p className="font-semibold text-foreground truncate">
                         {c.nome} {c.cognome}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">{c.negozio}</p>
+                      <p className="text-xs text-muted-foreground truncate">{c.mansione} • {c.negozio}</p>
                     </div>
 
                     {c.voted ? (
