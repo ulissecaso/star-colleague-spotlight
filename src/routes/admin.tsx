@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Trophy, Upload, LogOut, Plus, Trash2, Lock, Unlock, Sparkles } from "lucide-react";
+import { Trophy, Upload, LogOut, Plus, Trash2, Lock, Unlock, Sparkles, Download } from "lucide-react";
 import {
   adminBootstrap, listEmployees, upsertEmployee, deleteEmployee, importEmployeesCsv,
   listPeriods, togglePeriod,
@@ -255,6 +255,32 @@ function EmployeesTab() {
     onError: (e) => toast.error((e as Error).message),
   });
 
+  function handleExportExcel() {
+    const employees = data?.employees ?? [];
+    const headers = ["Nome", "Cognome", "Codice", "Mansione", "Reparto", "Negozio", "Stato", "Escluso premi"];
+    const rows = employees.map((e: any) => [
+      e.nome,
+      e.cognome,
+      e.codice_accesso,
+      e.mansione ?? "",
+      e.reparto ?? "",
+      e.negozio ?? "",
+      e.attivo ? "Attivo" : "Inattivo",
+      e.escluso_premi ? "Sì" : "No",
+    ]);
+    const csvContent = [headers, ...rows]
+      .map(row => row.map((cell: string) => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+      .join("\r\n");
+    // BOM UTF-8 so Excel recognises the encoding
+    const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `dipendenti_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function handleCsv(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -282,6 +308,7 @@ function EmployeesTab() {
         <Button onClick={() => setEditing({ attivo: true, escluso_premi: false })}><Plus /> Nuovo dipendente</Button>
         <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload /> Importa CSV</Button>
         <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleCsv} />
+        <Button variant="outline" onClick={handleExportExcel}><Download /> Esporta Excel</Button>
         <a
           href={`data:text/csv;charset=utf-8,${encodeURIComponent("nome;cognome;codice_accesso;mansione;reparto;negozio;foto_url\nIlaria;Bianchi;IB001;Impiegata;Ufficio Master;Sede Centrale;")}`}
           download="template_dipendenti.csv"
