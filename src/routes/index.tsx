@@ -16,7 +16,7 @@ import {
   adminBootstrap, listEmployees, upsertEmployee, deleteEmployee, importEmployeesCsv,
   listPeriods, togglePeriod,
 } from "@/lib/employees.functions";
-import { getAdminLeaderboards, getDashboard, calculateWinners, getWinners, getEmployeeComments } from "@/lib/voting.functions";
+import { getAdminLeaderboards, getDashboard, calculateWinners, getWinners, getEmployeeComments, resetPeriodVotes } from "@/lib/voting.functions";
 import { getParticipationBreakdown } from "@/lib/participation.functions";
 import { getCurrentPrize, setCurrentPrize, deleteCurrentPrize } from "@/lib/prizes.functions";
 import { getCompanyResults, resetCompanyVotes } from "@/lib/company.functions";
@@ -479,28 +479,59 @@ function EmployeesTab() {
 function PeriodsTab() {
   const list = useServerFn(listPeriods);
   const toggle = useServerFn(togglePeriod);
+  const resetVotes = useServerFn(resetPeriodVotes);
   const qc = useQueryClient();
+  const [resettingId, setResettingId] = useState<string | null>(null);
   const { data } = useQuery({ queryKey: ["periods"], queryFn: () => list() });
+
+  async function handleReset(p: any) {
+    if (!confirm(`Cancellare TUTTI i voti (colleghi + azienda) di ${MESI[p.mese - 1]} ${p.anno}?\n\nI dipendenti potranno votare di nuovo da zero.`)) return;
+    setResettingId(p.id);
+    try {
+      await resetVotes({ data: { periodId: p.id } });
+      toast.success(`Voti di ${MESI[p.mese - 1]} ${p.anno} cancellati.`);
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["participation"] });
+      qc.invalidateQueries({ queryKey: ["company-results"] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setResettingId(null);
+    }
+  }
+
   return (
     <div className="bg-card rounded-2xl shadow-soft p-5">
       <h3 className="font-semibold mb-3">Periodi di votazione</h3>
       <ul className="divide-y divide-border">
         {data?.periods.map((p: any) => (
-          <li key={p.id} className="py-3 flex items-center justify-between">
+          <li key={p.id} className="py-3 flex items-center justify-between gap-2">
             <div>
               <p className="font-medium">{MESI[p.mese - 1]} {p.anno}</p>
               <p className="text-xs text-muted-foreground">{p.status === "open" ? "Aperto" : "Chiuso"}</p>
             </div>
-            <Button
-              variant={p.status === "open" ? "outline" : "default"}
-              size="sm"
-              onClick={async () => {
-                await toggle({ data: { id: p.id, status: p.status === "open" ? "closed" : "open" } });
-                qc.invalidateQueries({ queryKey: ["periods"] });
-              }}
-            >
-              {p.status === "open" ? <><Lock className="size-4"/> Chiudi</> : <><Unlock className="size-4"/> Riapri</>}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
+                disabled={resettingId === p.id}
+                onClick={() => handleReset(p)}
+              >
+                <Trash2 className="size-3.5" />
+                {resettingId === p.id ? "…" : "Cancella voti"}
+              </Button>
+              <Button
+                variant={p.status === "open" ? "outline" : "default"}
+                size="sm"
+                onClick={async () => {
+                  await toggle({ data: { id: p.id, status: p.status === "open" ? "closed" : "open" } });
+                  qc.invalidateQueries({ queryKey: ["periods"] });
+                }}
+              >
+                {p.status === "open" ? <><Lock className="size-4"/> Chiudi</> : <><Unlock className="size-4"/> Riapri</>}
+              </Button>
+            </div>
           </li>
         ))}
         {(!data || data.periods.length === 0) && <p className="text-sm text-muted-foreground py-6 text-center">Nessun periodo. Si crea automaticamente al primo voto.</p>}
