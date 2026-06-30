@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start/server";
+import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function requireAdmin(supabase: any, userId: string) {
@@ -39,7 +39,7 @@ export const getParticipationBreakdown = createServerFn({ method: "POST" })
     const { data: period } = await supabaseAdmin
       .from("voting_periods")
       .select("id")
-      .eq("is_active", true)
+      .eq("status", "open")
       .maybeSingle();
 
     if (!period) {
