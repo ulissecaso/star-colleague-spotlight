@@ -17,6 +17,7 @@ import {
   listPeriods, togglePeriod,
 } from "@/lib/employees.functions";
 import { getAdminLeaderboards, getDashboard, calculateWinners, getWinners, getEmployeeComments } from "@/lib/voting.functions";
+import { getParticipationBreakdown } from "@/lib/participation.functions";
 import { getCurrentPrize, setCurrentPrize, deleteCurrentPrize } from "@/lib/prizes.functions";
 import { getCompanyResults } from "@/lib/company.functions";
 import { Gift, Settings } from "lucide-react";
@@ -181,16 +182,75 @@ function AdminDashboard() {
 
 function DashboardTab() {
   const fn = useServerFn(getDashboard);
+  const breakdownFn = useServerFn(getParticipationBreakdown);
   const { data } = useQuery({ queryKey: ["dashboard"], queryFn: () => fn() });
+  const { data: breakdown } = useQuery({ queryKey: ["participation"], queryFn: () => breakdownFn() });
   if (!data) return <p className="text-muted-foreground">Caricamento…</p>;
+
+  const underCount = (breakdown?.notStarted.length ?? 0) + (breakdown?.underThreshold.length ?? 0);
+  const overCount = breakdown?.overThreshold.length ?? 0;
+  const doneCount = breakdown?.complete.length ?? 0;
+
   return (
     <div className="space-y-5">
+      {/* Statistiche generali */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Stat label="Dipendenti attivi" value={data.totalEmployees} />
         <Stat label="Completamento" value={`${data.completion}%`} />
         <Stat label="Hanno completato" value={data.fullyDone} />
         <Stat label="Team Score medio" value={data.overallTeamScore} gold />
       </div>
+
+      {/* Partecipazione voti colleghi */}
+      {breakdown && (
+        <div className="grid md:grid-cols-3 gap-4">
+          <Card title={`❌ Sotto soglia <51% — ${underCount}`}>
+            {underCount === 0
+              ? <p className="text-sm text-muted-foreground">Nessuno</p>
+              : <ul className="space-y-1 max-h-72 overflow-y-auto">
+                  {[...breakdown.notStarted, ...breakdown.underThreshold]
+                    .sort((a, b) => a.pct - b.pct)
+                    .map(e => (
+                      <li key={e.id} className="flex justify-between items-center text-sm py-0.5">
+                        <span>{e.cognome} {e.nome}</span>
+                        <span className="text-muted-foreground text-xs">{e.voted}/{e.total} ({e.pct}%)</span>
+                      </li>
+                    ))}
+                </ul>
+            }
+          </Card>
+          <Card title={`⚠️ Sopra soglia 51–99% — ${overCount}`}>
+            {overCount === 0
+              ? <p className="text-sm text-muted-foreground">Nessuno</p>
+              : <ul className="space-y-1 max-h-72 overflow-y-auto">
+                  {breakdown.overThreshold
+                    .sort((a, b) => b.pct - a.pct)
+                    .map(e => (
+                      <li key={e.id} className="flex justify-between items-center text-sm py-0.5">
+                        <span>{e.cognome} {e.nome}</span>
+                        <span className="text-muted-foreground text-xs">{e.voted}/{e.total} ({e.pct}%)</span>
+                      </li>
+                    ))}
+                </ul>
+            }
+          </Card>
+          <Card title={`✅ Completato 100% — ${doneCount}`}>
+            {doneCount === 0
+              ? <p className="text-sm text-muted-foreground">Nessuno</p>
+              : <ul className="space-y-1 max-h-72 overflow-y-auto">
+                  {breakdown.complete.map(e => (
+                    <li key={e.id} className="flex justify-between items-center text-sm py-0.5">
+                      <span>{e.cognome} {e.nome}</span>
+                      <span className="text-muted-foreground text-xs">{e.voted}/{e.total}</span>
+                    </li>
+                  ))}
+                </ul>
+            }
+          </Card>
+        </div>
+      )}
+
+      {/* Confronto negozi e mansioni */}
       <div className="grid md:grid-cols-2 gap-4">
         <Card title="Confronto Negozi">
           {data.byStore.length === 0 ? <p className="text-sm text-muted-foreground">Nessun dato ancora.</p> :
