@@ -39,7 +39,7 @@ export const getParticipationBreakdown = createServerFn({ method: "POST" })
     const { data: period } = await supabaseAdmin
       .from("voting_periods")
       .select("id")
-      .eq("is_active", true)
+      .eq("status", "open")
       .maybeSingle();
 
     if (!period) {
@@ -60,17 +60,17 @@ export const getParticipationBreakdown = createServerFn({ method: "POST" })
       return { notStarted: [], underThreshold: [], overThreshold: [], complete: [] };
     }
 
-    // Voti espressi nel periodo: conta votee distinti per voter
+    // Voti espressi nel periodo: conta voted distinti per voter
     const { data: voteRows } = await supabaseAdmin
       .from("votes")
-      .select("voter_id, votee_id")
+      .select("voter_id, voted_id")
       .eq("period_id", period.id);
 
-    // Mappa voter_id -> Set di votee_id (distinti)
+    // Mappa voter_id -> Set di voted_id (distinti)
     const votedMap: Record<string, Set<string>> = {};
     for (const v of voteRows ?? []) {
       if (!votedMap[v.voter_id]) votedMap[v.voter_id] = new Set();
-      votedMap[v.voter_id].add(v.votee_id);
+      votedMap[v.voter_id].add(v.voted_id);
     }
 
     const notStarted: EmployeeParticipation[] = [];
