@@ -39,7 +39,7 @@ export const listEmployees = createServerFn({ method: "POST" })
 
 export const upsertEmployee = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: {
+  .validator((d: {
     id?: string;
     nome: string;
     cognome: string;
@@ -95,7 +95,7 @@ export const upsertEmployee = createServerFn({ method: "POST" })
 
 export const deleteEmployee = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -105,7 +105,7 @@ export const deleteEmployee = createServerFn({ method: "POST" })
 
 export const importEmployeesCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { rows: Array<Record<string, string>> }) =>
+  .validator((d: { rows: Array<Record<string, string>> }) =>
     z.object({ rows: z.array(z.record(z.string(), z.string())).min(1).max(2000) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -154,7 +154,7 @@ export const listPeriods = createServerFn({ method: "POST" })
 
 export const togglePeriod = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string; status: "open" | "closed" }) =>
+  .validator((d: { id: string; status: "open" | "closed" }) =>
     z.object({ id: z.string().uuid(), status: z.enum(["open", "closed"]) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -166,7 +166,7 @@ export const togglePeriod = createServerFn({ method: "POST" })
 
 export const addDisciplinary = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { employee_id: string; descrizione: string; penalita: number }) =>
+  .validator((d: { employee_id: string; descrizione: string; penalita: number }) =>
     z.object({ employee_id: z.string().uuid(), descrizione: z.string().min(1).max(500), penalita: z.number().int().min(1).max(10) }).parse(d),
   )
   .handler(async ({ data, context }) => {

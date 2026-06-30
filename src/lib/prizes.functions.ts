@@ -65,7 +65,7 @@ export const getCurrentPrize = createServerFn({ method: "GET" }).handler(async (
 // === Admin: set prize (uploads image bytes + saves metadata) ===
 export const setCurrentPrize = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: {
+  .validator((d: {
     fileBase64: string;
     fileName: string;
     contentType: string;
@@ -96,7 +96,6 @@ export const setCurrentPrize = createServerFn({ method: "POST" })
       .upload(path, bytes, { contentType: data.contentType, upsert: true });
     if (upErr) throw new Error("Errore caricamento immagine: " + upErr.message);
 
-    // Remove previous image if exists
     const { data: existing } = await supabaseAdmin
       .from("monthly_prizes")
       .select("image_path")

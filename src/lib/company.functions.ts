@@ -50,7 +50,7 @@ async function getOrCreateCurrentPeriod() {
 
 // === Status: ha già votato l'azienda questo mese? ===
 export const getCompanyVoteStatus = createServerFn({ method: "POST" })
-  .inputValidator((d: { token: string }) => z.object({ token: z.string() }).parse(d))
+  .validator((d: { token: string }) => z.object({ token: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const me = await requireEmployee(data.token);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -69,7 +69,7 @@ export const getCompanyVoteStatus = createServerFn({ method: "POST" })
 
 // === Invio voto azienda ===
 export const submitCompanyVote = createServerFn({ method: "POST" })
-  .inputValidator((d: {
+  .validator((d: {
     token: string;
     scores: Record<string, number>;
     commento?: string;
@@ -99,7 +99,6 @@ export const submitCompanyVote = createServerFn({ method: "POST" })
       voter_id: me.id,
       criterio: k,
       punteggio: data.scores[k],
-      // commento sul primo criterio per evitare duplicazioni
       commento: idx === 0 ? (data.commento ?? null) : null,
       device_fingerprint: data.deviceId ?? null,
     }));
@@ -107,14 +106,14 @@ export const submitCompanyVote = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.from("company_votes").insert(rows);
     if (error) {
       if (error.code === "23505") throw new Error("Hai già valutato l'azienda questo mese");
-      throw new Error("Errore nel salvare la valutazione: " + error.message);
+      throw new Error("Errore nel salvare la valutazione");
     }
     return { ok: true };
   });
 
 // === Risultati aziendali (admin) ===
 export const getCompanyResults = createServerFn({ method: "POST" })
-  .inputValidator((d: { periodId?: string }) =>
+  .validator((d: { periodId?: string }) =>
     z.object({ periodId: z.string().uuid().optional() }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -177,23 +176,4 @@ export const getCompanyResults = createServerFn({ method: "POST" })
       perCriterio,
       commenti,
     };
-  });
-
-// === Reset voti azienda (admin) ===
-export const resetCompanyVotes = createServerFn({ method: "POST" })
-  .inputValidator((d: { periodId?: string }) =>
-    z.object({ periodId: z.string().uuid().optional() }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const period = data.periodId
-      ? (await supabaseAdmin.from("voting_periods").select("*").eq("id", data.periodId).maybeSingle()).data
-      : await getOrCreateCurrentPeriod();
-    if (!period) throw new Error("Periodo non trovato");
-    const { error } = await supabaseAdmin
-      .from("company_votes")
-      .delete()
-      .eq("period_id", period.id);
-    if (error) throw new Error("Errore nella cancellazione: " + error.message);
-    return { ok: true };
   });

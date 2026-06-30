@@ -9,7 +9,7 @@ async function requireAdmin(supabase: any, userId: string) {
 
 export const listOptions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { tipo: string }) => z.object({ tipo: z.enum(["reparto", "negozio"]) }).parse(d))
+  .validator((d: { tipo: string }) => z.object({ tipo: z.enum(["reparto", "negozio"]) }).parse(d))
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -23,7 +23,7 @@ export const listOptions = createServerFn({ method: "POST" })
 
 export const addOption = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { tipo: string; valore: string }) =>
+  .validator((d: { tipo: string; valore: string }) =>
     z.object({ tipo: z.enum(["reparto", "negozio"]), valore: z.string().min(1).max(100) }).parse(d)
   )
   .handler(async ({ data, context }) => {
@@ -36,7 +36,7 @@ export const addOption = createServerFn({ method: "POST" })
 
 export const deleteOption = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
