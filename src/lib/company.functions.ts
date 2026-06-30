@@ -107,7 +107,7 @@ export const submitCompanyVote = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.from("company_votes").insert(rows);
     if (error) {
       if (error.code === "23505") throw new Error("Hai già valutato l'azienda questo mese");
-      throw new Error("Errore nel salvare la valutazione");
+      throw new Error("Errore nel salvare la valutazione: " + error.message);
     }
     return { ok: true };
   });
@@ -177,4 +177,23 @@ export const getCompanyResults = createServerFn({ method: "POST" })
       perCriterio,
       commenti,
     };
+  });
+
+// === Reset voti azienda (admin) ===
+export const resetCompanyVotes = createServerFn({ method: "POST" })
+  .inputValidator((d: { periodId?: string }) =>
+    z.object({ periodId: z.string().uuid().optional() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const period = data.periodId
+      ? (await supabaseAdmin.from("voting_periods").select("*").eq("id", data.periodId).maybeSingle()).data
+      : await getOrCreateCurrentPeriod();
+    if (!period) throw new Error("Periodo non trovato");
+    const { error } = await supabaseAdmin
+      .from("company_votes")
+      .delete()
+      .eq("period_id", period.id);
+    if (error) throw new Error("Errore nella cancellazione: " + error.message);
+    return { ok: true };
   });
