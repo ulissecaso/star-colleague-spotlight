@@ -573,9 +573,13 @@ function WinnersTab() {
             {periods?.periods.map((p: any) => <option key={p.id} value={p.id}>{MESI[p.mese - 1]} {p.anno}</option>)}
           </select>
           <Button disabled={!periodId} onClick={async () => {
-            const res = await calc({ data: { periodId: periodId! } });
-            toast.success(`Vincitore: ${res.winner?.nome} ${res.winner?.cognome}`);
-            qc.invalidateQueries({ queryKey: ["winners"] });
+            try {
+              const res = await calc({ data: { periodId: periodId! } });
+              toast.success(`Vincitore: ${res.winner?.nome} ${res.winner?.cognome}`);
+              qc.invalidateQueries({ queryKey: ["winners"] });
+            } catch (err) {
+              toast.error((err as Error).message);
+            }
           }}><Sparkles /> Calcola</Button>
         </div>
         {lb && (
