@@ -484,27 +484,31 @@ export const calculateWinners = createServerFn({ method: "POST" })
     const eligible = lb.all.filter((r) => !excludedSet.has(r.employee.id) && r.votesReceived > 0);
     const winner = eligible[0];
 
+    const errors: string[] = [];
+
     if (winner) {
-      await supabaseAdmin.from("monthly_winners").upsert({
+      const { error } = await supabaseAdmin.from("monthly_winners").upsert({
         period_id: data.periodId,
         employee_id: winner.employee.id,
         team_score: winner.teamScore,
         categoria: "aziendale",
         scope_value: null,
       });
+      if (error) errors.push(`aziendale: ${error.message} (code ${error.code ?? "?"})`);
     }
 
     const stores = new Set(eligible.map((e) => e.employee.negozio));
     for (const store of stores) {
       const top = eligible.find((e) => e.employee.negozio === store);
       if (top) {
-        await supabaseAdmin.from("monthly_winners").upsert({
+        const { error } = await supabaseAdmin.from("monthly_winners").upsert({
           period_id: data.periodId,
           employee_id: top.employee.id,
           team_score: top.teamScore,
           categoria: "negozio",
           scope_value: store,
         });
+        if (error) errors.push(`negozio ${store}: ${error.message} (code ${error.code ?? "?"})`);
       }
     }
 
@@ -512,14 +516,19 @@ export const calculateWinners = createServerFn({ method: "POST" })
     for (const role of roles) {
       const top = eligible.find((e) => e.employee.mansione === role);
       if (top) {
-        await supabaseAdmin.from("monthly_winners").upsert({
+        const { error } = await supabaseAdmin.from("monthly_winners").upsert({
           period_id: data.periodId,
           employee_id: top.employee.id,
           team_score: top.teamScore,
           categoria: "mansione",
           scope_value: role,
         });
+        if (error) errors.push(`mansione ${role}: ${error.message} (code ${error.code ?? "?"})`);
       }
+    }
+
+    if (errors.length > 0) {
+      throw new Error(`Errore nel salvataggio dei vincitori: ${errors.join(" | ")}`);
     }
 
     return { ok: true, winner: winner?.employee, period };
