@@ -1,5 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+
+async function requireAdmin(supabase: any, userId: string) {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!data) throw new Error("Accesso negato: serve ruolo admin");
+}
 
 const CRITERI = [
   "collaborazione",
@@ -563,4 +574,23 @@ export const getWinners = createServerFn({ method: "POST" })
 
     const { data: winners } = await query;
     return { winners: winners ?? [] };
+  });
+
+// === Admin: cancella tutti i voti (colleghi + azienda) di un periodo ===
+export const resetPeriodVotes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: { periodId: string }) =>
+    z.object({ periodId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    await supabaseAdmin.from("votes").delete().eq("period_id", data.periodId);
+    await supabaseAdmin.from("vote_comments").delete().eq("period_id", data.periodId);
+    await supabaseAdmin.from("vote_skips").delete().eq("period_id", data.periodId);
+    await supabaseAdmin.from("vote_audit").delete().eq("period_id", data.periodId);
+    await supabaseAdmin.from("company_votes").delete().eq("period_id", data.periodId);
+
+    return { ok: true };
   });
