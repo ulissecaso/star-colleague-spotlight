@@ -1,5 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+
+async function requireAdmin(supabase: any, userId: string) {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!data) throw new Error("Accesso negato: serve ruolo admin");
+}
 
 export const COMPANY_CRITERI = [
   { key: "azienda", label: "Azienda", desc: "Quanto sei soddisfatto di lavorare qui" },
@@ -176,4 +187,15 @@ export const getCompanyResults = createServerFn({ method: "POST" })
       perCriterio,
       commenti,
     };
+  });
+
+// === Admin: cancella tutti i voti azienda del periodo corrente ===
+export const resetCompanyVotes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const period = await getOrCreateCurrentPeriod();
+    await supabaseAdmin.from("company_votes").delete().eq("period_id", period.id);
+    return { ok: true };
   });
