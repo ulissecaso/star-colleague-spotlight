@@ -16,10 +16,10 @@ import {
   adminBootstrap, listEmployees, upsertEmployee, deleteEmployee, importEmployeesCsv,
   listPeriods, togglePeriod,
 } from "@/lib/employees.functions";
-import { getAdminLeaderboards, getDashboard, calculateWinners, getWinners, getEmployeeComments } from "@/lib/voting.functions";
+import { getAdminLeaderboards, getDashboard, calculateWinners, getWinners, getEmployeeComments, resetPeriodVotes } from "@/lib/voting.functions";
 import { getParticipationBreakdown } from "@/lib/participation.functions";
 import { getCurrentPrize, setCurrentPrize, deleteCurrentPrize } from "@/lib/prizes.functions";
-import { getCompanyResults } from "@/lib/company.functions";
+import { getCompanyResults, resetCompanyVotes } from "@/lib/company.functions";
 import { Gift, Settings } from "lucide-react";
 import { listOptions, addOption, deleteOption } from "@/lib/settings.functions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -479,28 +479,59 @@ function EmployeesTab() {
 function PeriodsTab() {
   const list = useServerFn(listPeriods);
   const toggle = useServerFn(togglePeriod);
+  const resetVotes = useServerFn(resetPeriodVotes);
   const qc = useQueryClient();
+  const [resettingId, setResettingId] = useState<string | null>(null);
   const { data } = useQuery({ queryKey: ["periods"], queryFn: () => list() });
+
+  async function handleReset(p: any) {
+    if (!confirm(`Cancellare TUTTI i voti (colleghi + azienda) di ${MESI[p.mese - 1]} ${p.anno}?\n\nI dipendenti potranno votare di nuovo da zero.`)) return;
+    setResettingId(p.id);
+    try {
+      await resetVotes({ data: { periodId: p.id } });
+      toast.success(`Voti di ${MESI[p.mese - 1]} ${p.anno} cancellati.`);
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["participation"] });
+      qc.invalidateQueries({ queryKey: ["company-results"] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setResettingId(null);
+    }
+  }
+
   return (
     <div className="bg-card rounded-2xl shadow-soft p-5">
       <h3 className="font-semibold mb-3">Periodi di votazione</h3>
       <ul className="divide-y divide-border">
         {data?.periods.map((p: any) => (
-          <li key={p.id} className="py-3 flex items-center justify-between">
+          <li key={p.id} className="py-3 flex items-center justify-between gap-2">
             <div>
               <p className="font-medium">{MESI[p.mese - 1]} {p.anno}</p>
               <p className="text-xs text-muted-foreground">{p.status === "open" ? "Aperto" : "Chiuso"}</p>
             </div>
-            <Button
-              variant={p.status === "open" ? "outline" : "default"}
-              size="sm"
-              onClick={async () => {
-                await toggle({ data: { id: p.id, status: p.status === "open" ? "closed" : "open" } });
-                qc.invalidateQueries({ queryKey: ["periods"] });
-              }}
-            >
-              {p.status === "open" ? <><Lock className="size-4"/> Chiudi</> : <><Unlock className="size-4"/> Riapri</>}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
+                disabled={resettingId === p.id}
+                onClick={() => handleReset(p)}
+              >
+                <Trash2 className="size-3.5" />
+                {resettingId === p.id ? "…" : "Cancella voti"}
+              </Button>
+              <Button
+                variant={p.status === "open" ? "outline" : "default"}
+                size="sm"
+                onClick={async () => {
+                  await toggle({ data: { id: p.id, status: p.status === "open" ? "closed" : "open" } });
+                  qc.invalidateQueries({ queryKey: ["periods"] });
+                }}
+              >
+                {p.status === "open" ? <><Lock className="size-4"/> Chiudi</> : <><Unlock className="size-4"/> Riapri</>}
+              </Button>
+            </div>
           </li>
         ))}
         {(!data || data.periods.length === 0) && <p className="text-sm text-muted-foreground py-6 text-center">Nessun periodo. Si crea automaticamente al primo voto.</p>}
@@ -516,13 +547,21 @@ function WinnersTab() {
   const lbFn = useServerFn(getAdminLeaderboards);
   const qc = useQueryClient();
   const { data: periods } = useQuery({ queryKey: ["periods"], queryFn: () => list() });
-  const { data: winners } = useQuery({ queryKey: ["winners"], queryFn: () => winnersFn() });
   const [periodId, setPeriodId] = useState<string | undefined>();
   const { data: lb } = useQuery({
     queryKey: ["adminLb", periodId],
     queryFn: () => lbFn({ data: { periodId } }),
     enabled: !!periodId,
   });
+
+  // Filtro per l'Albo dei vincitori: di default mostra solo il periodo in corso.
+  // "" (vuoto) = periodo corrente, "all" = storico completo, oppure un id periodo specifico.
+  const [winnersFilter, setWinnersFilter] = useState<string>("");
+  const { data: winners } = useQuery({
+    queryKey: ["winners", winnersFilter],
+    queryFn: () => winnersFn({ data: { periodId: winnersFilter || undefined } }),
+  });
+  const currentPeriod = periods?.periods.find((p: any) => p.status === "open");
 
   return (
     <div className="space-y-5">
@@ -546,7 +585,22 @@ function WinnersTab() {
         )}
       </div>
       <div className="bg-card rounded-2xl shadow-soft p-5">
-        <h3 className="font-semibold mb-3 flex items-center gap-2"><Trophy className="text-gold" /> Albo dei vincitori</h3>
+        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+          <h3 className="font-semibold flex items-center gap-2"><Trophy className="text-gold" /> Albo dei vincitori</h3>
+          <select
+            className="border border-input rounded-md p-2 text-sm bg-background"
+            value={winnersFilter}
+            onChange={(e) => setWinnersFilter(e.target.value)}
+          >
+            <option value="">
+              Periodo in corso{currentPeriod ? ` (${MESI[currentPeriod.mese - 1]} ${currentPeriod.anno})` : ""}
+            </option>
+            {periods?.periods.map((p: any) => (
+              <option key={p.id} value={p.id}>{MESI[p.mese - 1]} {p.anno}</option>
+            ))}
+            <option value="all">Tutto lo storico</option>
+          </select>
+        </div>
         <ul className="divide-y divide-border">
           {winners?.winners.map((w: any) => (
             <li key={w.id} className="py-3 flex justify-between items-center">
@@ -560,7 +614,7 @@ function WinnersTab() {
               <span className="font-bold text-gold">{w.team_score}</span>
             </li>
           ))}
-          {(!winners || winners.winners.length === 0) && <p className="text-sm text-muted-foreground py-6 text-center">Nessun premio assegnato.</p>}
+          {(!winners || winners.winners.length === 0) && <p className="text-sm text-muted-foreground py-6 text-center">Nessun premio assegnato per questo periodo.</p>}
         </ul>
       </div>
     </div>
@@ -762,10 +816,27 @@ function MonthlyPrizeTab() {
 
 function CompanyTab() {
   const fn = useServerFn(getCompanyResults);
+  const resetFn = useServerFn(resetCompanyVotes);
+  const qc = useQueryClient();
+  const [resetting, setResetting] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ["company-results"],
     queryFn: () => fn({ data: {} }),
   });
+
+  async function handleReset() {
+    if (!confirm("Cancellare tutti i voti azienda del periodo corrente? I dipendenti potranno votare di nuovo.")) return;
+    setResetting(true);
+    try {
+      await resetFn({ data: {} });
+      toast.success("Voti azienda cancellati. I dipendenti possono votare di nuovo.");
+      qc.invalidateQueries({ queryKey: ["company-results"] });
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setResetting(false);
+    }
+  }
 
   if (isLoading || !data) return <p className="text-muted-foreground p-4">Caricamento…</p>;
 
@@ -821,6 +892,18 @@ function CompanyTab() {
           </ul>
         </div>
       )}
+
+      <div className="bg-card rounded-2xl shadow-soft p-5 border border-destructive/20">
+        <h3 className="font-semibold mb-1 text-destructive">Zona pericolosa</h3>
+        <p className="text-sm text-muted-foreground mb-3">
+          Cancella tutti i voti azienda del mese corrente. I dipendenti potranno votare di nuovo da zero.
+          Usa solo se i voti esistenti sono errati o di test.
+        </p>
+        <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive/10" onClick={handleReset} disabled={resetting}>
+          <Trash2 className="size-4" />
+          {resetting ? "Cancellazione…" : "Cancella voti azienda (mese corrente)"}
+        </Button>
+      </div>
     </div>
   );
 }
