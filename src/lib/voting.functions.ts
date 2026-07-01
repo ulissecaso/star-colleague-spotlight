@@ -525,12 +525,33 @@ export const calculateWinners = createServerFn({ method: "POST" })
     return { ok: true, winner: winner?.employee, period };
   });
 
-export const getWinners = createServerFn({ method: "POST" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: winners } = await supabaseAdmin
-    .from("monthly_winners")
-    .select("*, employees(nome, cognome, mansione, negozio, foto_url), voting_periods(anno, mese)")
-    .order("created_at", { ascending: false })
-    .limit(50);
-  return { winners: winners ?? [] };
-});
+export const getWinners = createServerFn({ method: "POST" })
+  .validator((d?: { periodId?: string }) =>
+    z.object({ periodId: z.string().optional() }).parse(d ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // "all" = storico completo; nessun periodId = periodo in corso (default);
+    // un uuid specifico = quel periodo.
+    let periodId: string | null = null;
+    if (data.periodId === "all") {
+      periodId = null;
+    } else if (data.periodId) {
+      periodId = data.periodId;
+    } else {
+      const current = await getOrCreateCurrentPeriod();
+      periodId = current.id;
+    }
+
+    let query = supabaseAdmin
+      .from("monthly_winners")
+      .select("*, employees(nome, cognome, mansione, negozio, foto_url), voting_periods(anno, mese)")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (periodId) query = query.eq("period_id", periodId);
+
+    const { data: winners } = await query;
+    return { winners: winners ?? [] };
+  });
